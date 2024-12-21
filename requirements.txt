@@ -1,0 +1,6 @@
+gym
+gym-super-mario-bros
+nes-py
+torch
+torchvision
+torchrl
