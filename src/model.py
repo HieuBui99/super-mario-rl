@@ -26,7 +26,7 @@ class Agent(nn.Module):
 
         self._init_weights()
 
-    def _init_weights(self, layer):
+    def _init_weights(self):
         for module in self.modules():
             if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
                 nn.init.orthogonal_(module.weight, nn.init.calculate_gain('relu'))
@@ -45,4 +45,4 @@ class Agent(nn.Module):
         action = dist.sample()
         action_logprob = dist.log_prob(action)
 
-        return action.detach(), action_logprob.detach(), state_value.detach()
+        return action, action_logprob, state_value

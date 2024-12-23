@@ -2,10 +2,8 @@ import random
 from collections import deque
 
 class ReplayBuffer:
-    def __init__(self, max_size):
-        self.buffer = deque(maxlen=max_size)
-        self.max_size = max_size
-
+    def __init__(self):
+        self.buffer = deque(maxlen=100000)
     def add(self, timestep):
         self.buffer.append(timestep)
 

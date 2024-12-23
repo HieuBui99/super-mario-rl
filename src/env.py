@@ -122,7 +122,7 @@ class SkipFrame(gym.Wrapper):
         return self.env.reset(**kwargs)
     
 def create_env(world, stage):
-    env = gym_super_mario_bros.make(f"SuperMarioBros-{world}-{stage}-v0", apply_api_compatibility=True)
+    env = gym_super_mario_bros.make(f"SuperMarioBros-{world}-{stage}-v3", apply_api_compatibility=True)
     env = JoypadSpace(env, SIMPLE_MOVEMENT)
     env = NoopResetEnv(env, noop_max=30)
     env = SkipFrame(env, skip=4)
