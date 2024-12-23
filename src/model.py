@@ -46,3 +46,12 @@ class Agent(nn.Module):
         action_logprob = dist.log_prob(action)
 
         return action, action_logprob, state_value
+    
+    def evaluate(self, x, action):
+        logits, state_value = self(x)
+        
+        dist = Categorical(logits=logits)
+        action_logprobs = dist.log_prob(action)
+        dist_entropy = dist.entropy()
+
+        return action_logprobs, state_value, dist_entropy
