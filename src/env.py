@@ -10,8 +10,16 @@ from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from nes_py.wrappers import JoypadSpace
 
 
+class MonitorEnv():
+    def __init__(self):
+        self.store = []
+
+    def export(self):
+        pass
+
+
 class NoopResetEnv(gym.Wrapper):
-    def __init__(self, env, noop_max=30):
+    def __init__(self, env, noop_max=30, monitor=None):
         """Sample initial states by taking random number of no-ops on reset.
         No-op is assumed to be action 0.
         """
@@ -19,6 +27,9 @@ class NoopResetEnv(gym.Wrapper):
         self.noop_max = noop_max
         self.override_num_noops = None
         self.noop_action = 0
+        
+        self.monitor = monitor
+
         assert env.get_action_meanings()[0] == "NOOP"
 
     def reset(self, **kwargs):
@@ -39,7 +50,10 @@ class NoopResetEnv(gym.Wrapper):
         return obs, info
 
     def step(self, ac):
-        return self.env.step(ac)
+        obs, reward, done, truncate, info = self.env.step(ac)
+        if self.monitor:
+            self.monitor.store.append(obs)
+        return obs, reward, done, truncate, info
 
 
 class NormalizeFrame(ObservationWrapper):
@@ -122,7 +136,7 @@ class SkipFrame(gym.Wrapper):
         return self.env.reset(**kwargs)
     
 def create_env(world, stage):
-    env = gym_super_mario_bros.make(f"SuperMarioBros-{world}-{stage}-v3", apply_api_compatibility=True)
+    env = gym_super_mario_bros.make(f"SuperMarioBros-{world}-{stage}-v0", apply_api_compatibility=True)
     env = JoypadSpace(env, SIMPLE_MOVEMENT)
     env = NoopResetEnv(env, noop_max=30)
     env = SkipFrame(env, skip=4)

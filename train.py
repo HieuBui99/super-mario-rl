@@ -9,7 +9,7 @@ from src.replay import ReplayBuffer
 
 ####Configurations####
 device = "cuda" if torch.cuda.is_available() else "cpu"
-seed = 1
+seed = 2
 
 # learning hyperparameters
 lr = 1e-4
@@ -18,7 +18,7 @@ tau = 1.0  # GAE
 beta = 0.01  # entropy
 eps = 0.2  # PPO clip
 
-bs = 32
+bs = 128
 epochs = 10
 
 train_steps = 5000000
@@ -51,7 +51,7 @@ episode = 0
 running_reward = 0
 running_episodes = 0
 
-
+mse = torch.nn.MSELoss(reduction="none")
 pb = tqdm(range(train_steps))
 while step < train_steps:
     observation, _ = env.reset()
@@ -85,28 +85,17 @@ while step < train_steps:
             with torch.no_grad():
                 _, next_value = model(cur_obs)
 
+
             rewards = []
-            gae = 0
-            for reward, value, is_terminal in list(
-                zip(
-                    replay_buffer.rewards,
-                    replay_buffer.state_values,
-                    replay_buffer.is_terminals,
-                )
-            )[::-1]:
-                gae = gae * gamma * tau
-                gae = (
-                    gae
-                    + reward
-                    + gamma * next_value.detach() * (1 - is_terminal)
-                    - value.detach()
-                )
-                next_value = value
-                rewards.append(gae + value)
-            rewards = rewards[::-1]
+            discounted_reward = 0
+            for reward, is_terminal in zip(reversed(replay_buffer.rewards), reversed(replay_buffer.is_terminals)):
+                if is_terminal:
+                    discounted_reward = 0
+                discounted_reward = reward + gamma * discounted_reward
+                rewards.insert(0, discounted_reward)
 
             rewards = torch.tensor(rewards).float().to(device)
-            # rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
+            rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
             rewards = rewards.detach()
 
             old_obs = torch.cat(replay_buffer.observations, dim=0).detach()
@@ -130,15 +119,14 @@ while step < train_steps:
                     surr2 = (
                         torch.clamp(ratio, 1 - eps, 1 + eps) * advantages[batch_indices]
                     )
-                    actor_loss = -torch.min(surr1, surr2).mean()
+                    actor_loss = -torch.min(surr1, surr2)
 
-                    critic_loss = 0.5 * F.mse_loss(
+                    critic_loss = 0.5 * mse(
                         state_values.squeeze(-1), rewards[batch_indices]
                     )
-                    entropy_loss = -beta * dist_entropy.mean()
-
+                    entropy_loss = -beta * dist_entropy
                     loss = actor_loss + critic_loss + entropy_loss
-
+                    loss = loss.mean()
                     optimizer.zero_grad()
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
@@ -148,14 +136,14 @@ while step < train_steps:
 
         if step % print_freq == 0:
             print(
-                f"Step: {step}, Episode: {episode}, Reward: {running_reward / running_episodes}"
+                f"Step: {step}, Episode: {episode}, Reward: {running_reward / running_episodes}, Loss: {loss.item()}"
             )
             running_reward = 0
             running_episodes = 0
 
         if step % save_freq == 0:
             print(f"Saving model at step {step}")
-            torch.save(model.state_dict(), f"model_{step}.pt")
+            torch.save(model.state_dict(), f"weight/model_{step}.pt")
 
         if done:
             break

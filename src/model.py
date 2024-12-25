@@ -8,17 +8,17 @@ class Agent(nn.Module):
         super(Agent, self).__init__()
 
         self.cnn = nn.Sequential(
-            nn.Conv2d(num_frames, 16, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(num_frames, 32, kernel_size=3, stride=2, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(32, 32, kernel_size=3, stride=2, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(32, 32, kernel_size=3, stride=2, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(32, 32, kernel_size=3, stride=2, padding=1),
             nn.ReLU(inplace=True)
         )
 
-        self.lin = nn.Linear(128 * 6 * 6, 512)
+        self.lin = nn.Linear(32 * 6 * 6, 512)
 
         # Algorithm 1 PPO, Actor-Critic Style
         self.actor = nn.Linear(512, num_actions)
@@ -45,7 +45,7 @@ class Agent(nn.Module):
         action = dist.sample()
         action_logprob = dist.log_prob(action)
 
-        return action, action_logprob, state_value
+        return action.detach(), action_logprob.detach(), state_value.detach()
     
     def evaluate(self, x, action):
         logits, state_value = self(x)
