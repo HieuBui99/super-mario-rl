@@ -61,6 +61,7 @@ while step < train_steps:
     cur_obs = torch.tensor(np.array(observation), dtype=torch.float32).to(device)
     cur_obs = cur_obs.squeeze(-1).unsqueeze(0)
     for t in range(max_episode_len):
+        replay_buffer.observations.append(cur_obs)
         # take a step in the environment
         with torch.no_grad():
             action, logprob, state_value = model.act(cur_obs)
@@ -72,7 +73,7 @@ while step < train_steps:
         cur_obs = observation
 
         replay_buffer.actions.append(action.detach())
-        replay_buffer.observations.append(observation)
+        # replay_buffer.observations.append(observation)
         replay_buffer.logprobs.append(logprob.detach())
         replay_buffer.rewards.append(reward)
         replay_buffer.state_values.append(state_value.detach())
@@ -85,10 +86,11 @@ while step < train_steps:
             with torch.no_grad():
                 _, next_value = model(cur_obs)
 
-
             rewards = []
             discounted_reward = 0
-            for reward, is_terminal in zip(reversed(replay_buffer.rewards), reversed(replay_buffer.is_terminals)):
+            for reward, is_terminal in zip(
+                reversed(replay_buffer.rewards), reversed(replay_buffer.is_terminals)
+            ):
                 if is_terminal:
                     discounted_reward = 0
                 discounted_reward = reward + gamma * discounted_reward
@@ -145,14 +147,14 @@ while step < train_steps:
             print(f"Saving model at step {step}")
             torch.save(model.state_dict(), f"weight/model_{step}.pt")
 
-        if done:
-            break
-        
+        # if done:
+        #     break
+
         pb.update(1)
 
     running_reward += episode_reward
     running_episodes += 1
     episode += 1
-    
 
-torch.save(model.state_dict(), "model_final.pt")
+
+torch.save(model.state_dict(), "weight/model_final.pt")
