@@ -1,6 +1,11 @@
-gym
-gym-super-mario-bros
-nes-py
-torch
-torchvision
-torchrl
+gym>=0.26.2
+gym-super-mario-bros>=7.4.0
+imageio>=2.36.1
+matplotlib>=3.10.0
+numpy<2.0.0
+opencv-python>=4.10.0.84
+ruff>=0.8.4
+torch>=2.5.1
+torchrl>=0.6.0
+torchvision>=0.20.1
+tqdm>=4.67.1
